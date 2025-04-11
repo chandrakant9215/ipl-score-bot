@@ -1,0 +1,44 @@
+import requests
+import time
+
+# --- CONFIGURATION ---
+BOT_TOKEN = '8176604229:AAHSVv5R4LcDf2X4UjJNTrPh5uhzfquFVBc'
+CHANNEL_ID = '@cricketpredictionfree4'
+API_KEY = '425f23ae-8b60-4168-88c4-57b6b83dadec'
+
+def get_live_score():
+    url = f"https://cricapi.com/api/matches?apikey={API_KEY}"
+    try:
+        response = requests.get(url)
+        data = response.json()
+        
+        for match in data['matches']:
+            if "IPL" in match['name'] and match['matchStarted']:
+                unique_id = match['unique_id']
+                score_url = f"https://cricapi.com/api/cricketScore?apikey={API_KEY}&unique_id={unique_id}"
+                score_resp = requests.get(score_url).json()
+                return score_resp.get('score')
+    except Exception as e:
+        print("❌ Error fetching score:", e)
+    return None
+
+def send_to_telegram(message):
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    payload = {
+        'chat_id': CHANNEL_ID,
+        'text': message
+    }
+    try:
+        requests.post(url, data=payload)
+        print("✅ Score sent to Telegram")
+    except Exception as e:
+        print("❌ Error sending to Telegram:", e)
+
+# --- MAIN LOOP ---
+while True:
+    score = get_live_score()
+    if score:
+        send_to_telegram(f"🏏 IPL Live Score Update:\n\n{score}")
+    else:
+        print("ℹ️ No live IPL match found.")
+    time.sleep(300)  # every 5 minutes
